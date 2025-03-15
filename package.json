@@ -13,7 +13,8 @@
     "nodemon": "^3.1.9"
   },
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
-  }
+  "start": "react-scripts start",  // This will start the React app
+  "dev": "nodemon app.js",         // This will start the Node.js server
+  "backend": "node app.js"         // Optional: To start the backend without nodemon
+}
 }
