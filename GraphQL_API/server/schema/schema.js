@@ -38,13 +38,14 @@ const RootQuery = new GraphQLObjectType({
         id: { type: GraphQLString }
       },
       resolve(parent, args) {
+        // Resolving the task based on the 'id' argument
         return _.find(tasks, { id: args.id });
       }
     }
   }
 });
 
-// Export the schema
+// Export the schema with RootQuery
 module.exports = new GraphQLSchema({
   query: RootQuery
 });
