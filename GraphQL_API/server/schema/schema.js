@@ -1,19 +1,21 @@
-const { GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLInt, GraphQLID } = require('graphql');
+const { GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLInt, GraphQLID, GraphQLList } = require('graphql');
 const _ = require('lodash');
 
-// Define dummy data for tasks
+// Define dummy data for tasks with projectId
 const tasks = [
   {
     id: '1',
     title: 'Create your first webpage',
     weight: 1,
-    description: 'Create your first HTML file 0-index.html with: -Add the doctype on the first line (without any comment) -After the doctype, open and close a html tag Open your file in your browser (the page should be blank)'
+    description: 'Create your first HTML file 0-index.html with: -Add the doctype on the first line (without any comment) -After the doctype, open and close a html tag Open your file in your browser (the page should be blank)',
+    projectId: '1'
   },
   {
     id: '2',
     title: 'Structure your webpage',
     weight: 1,
-    description: 'Copy the content of 0-index.html into 1-index.html Create the head and body sections inside the html tag, create the head and body tags (empty) in this order'
+    description: 'Copy the content of 0-index.html into 1-index.html Create the head and body sections inside the html tag, create the head and body tags (empty) in this order',
+    projectId: '1'
   }
 ];
 
@@ -40,7 +42,14 @@ const TaskType = new GraphQLObjectType({
     id: { type: GraphQLID },  // Changed to GraphQLID
     title: { type: GraphQLString },
     weight: { type: GraphQLInt },
-    description: { type: GraphQLString }
+    description: { type: GraphQLString },
+    project: {
+      type: ProjectType,  // Added project field
+      resolve(parent) {
+        // Find the project associated with the task using projectId
+        return _.find(projects, { id: parent.projectId });
+      }
+    }
   })
 });
 
@@ -51,7 +60,14 @@ const ProjectType = new GraphQLObjectType({
     id: { type: GraphQLID },  // Changed to GraphQLID
     title: { type: GraphQLString },
     weight: { type: GraphQLInt },
-    description: { type: GraphQLString }
+    description: { type: GraphQLString },
+    tasks: {
+      type: new GraphQLList(TaskType),  // Added tasks field (list of TaskType)
+      resolve(parent) {
+        // Filter tasks associated with this project using projectId
+        return _.filter(tasks, { projectId: parent.id });
+      }
+    }
   })
 });
 
@@ -62,7 +78,7 @@ const RootQuery = new GraphQLObjectType({
     task: {
       type: TaskType,
       args: {
-        id: { type: GraphQLID }  // Changed to GraphQLID
+        id: { type: GraphQLID }
       },
       resolve(parent, args) {
         return _.find(tasks, { id: args.id });
@@ -71,7 +87,7 @@ const RootQuery = new GraphQLObjectType({
     project: {
       type: ProjectType,
       args: {
-        id: { type: GraphQLID }  // Changed to GraphQLID
+        id: { type: GraphQLID }
       },
       resolve(parent, args) {
         return _.find(projects, { id: args.id });
