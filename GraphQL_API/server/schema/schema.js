@@ -39,14 +39,13 @@ const projects = [
 const TaskType = new GraphQLObjectType({
   name: 'Task',
   fields: () => ({
-    id: { type: GraphQLID },  // Changed to GraphQLID
+    id: { type: GraphQLID },
     title: { type: GraphQLString },
     weight: { type: GraphQLInt },
     description: { type: GraphQLString },
     project: {
-      type: ProjectType,  // Added project field
+      type: ProjectType,
       resolve(parent) {
-        // Find the project associated with the task using projectId
         return _.find(projects, { id: parent.projectId });
       }
     }
@@ -57,14 +56,13 @@ const TaskType = new GraphQLObjectType({
 const ProjectType = new GraphQLObjectType({
   name: 'Project',
   fields: () => ({
-    id: { type: GraphQLID },  // Changed to GraphQLID
+    id: { type: GraphQLID },
     title: { type: GraphQLString },
     weight: { type: GraphQLInt },
     description: { type: GraphQLString },
     tasks: {
-      type: new GraphQLList(TaskType),  // Added tasks field (list of TaskType)
+      type: new GraphQLList(TaskType),
       resolve(parent) {
-        // Filter tasks associated with this project using projectId
         return _.filter(tasks, { projectId: parent.id });
       }
     }
@@ -92,6 +90,18 @@ const RootQuery = new GraphQLObjectType({
       resolve(parent, args) {
         return _.find(projects, { id: args.id });
       }
+    },
+    tasks: {
+      type: new GraphQLList(TaskType),  // Return a list of all tasks
+      resolve() {
+        return tasks;  // Return all tasks
+      }
+    },
+    projects: {
+      type: new GraphQLList(ProjectType),  // Return a list of all projects
+      resolve() {
+        return projects;  // Return all projects
+      }
     }
   }
 });
@@ -100,3 +110,4 @@ const RootQuery = new GraphQLObjectType({
 module.exports = new GraphQLSchema({
   query: RootQuery
 });
+
