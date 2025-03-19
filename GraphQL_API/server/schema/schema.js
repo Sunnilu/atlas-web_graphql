@@ -1,41 +1,10 @@
-const { GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLInt, GraphQLID, GraphQLList } = require('graphql');
-const _ = require('lodash');
+const { GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLInt, GraphQLNonNull, GraphQLID } = require('graphql');
+const mongoose = require('mongoose');
+const Project = require('./models/project');  // Import Project model
+const Task = require('./models/task');        // Import Task model
+const { GraphQLList } = require('graphql');
 
-// Define dummy data for tasks with projectId
-const tasks = [
-  {
-    id: '1',
-    title: 'Create your first webpage',
-    weight: 1,
-    description: 'Create your first HTML file 0-index.html with: -Add the doctype on the first line (without any comment) -After the doctype, open and close a html tag Open your file in your browser (the page should be blank)',
-    projectId: '1'
-  },
-  {
-    id: '2',
-    title: 'Structure your webpage',
-    weight: 1,
-    description: 'Copy the content of 0-index.html into 1-index.html Create the head and body sections inside the html tag, create the head and body tags (empty) in this order',
-    projectId: '1'
-  }
-];
-
-// Define dummy data for projects
-const projects = [
-  {
-    id: '1',
-    title: 'Advanced HTML',
-    weight: 1,
-    description: 'Welcome to the Web Stack specialization. The 3 first projects will give you all basics of the Web development: HTML, CSS and Developer tools. In this project, you will learn how to use HTML tags to structure a web page. No CSS, no styling - don’t worry, the final page will be “ugly” it’s normal, it’s not the purpose of this project. Important note: details are important! lowercase vs uppercase / wrong letter… be careful!'
-  },
-  {
-    id: '2',
-    title: 'Bootstrap',
-    weight: 1,
-    description: 'Bootstrap is a free and open-source CSS framework directed at responsive, mobile-first front-end web development. It contains CSS and JavaScript design templates for typography, forms, buttons, navigation, and other interface components.'
-  }
-];
-
-// Define the TaskType object
+// Define the TaskType object (already defined)
 const TaskType = new GraphQLObjectType({
   name: 'Task',
   fields: () => ({
@@ -43,16 +12,11 @@ const TaskType = new GraphQLObjectType({
     title: { type: GraphQLString },
     weight: { type: GraphQLInt },
     description: { type: GraphQLString },
-    project: {
-      type: ProjectType,
-      resolve(parent) {
-        return _.find(projects, { id: parent.projectId });
-      }
-    }
+    projectId: { type: GraphQLID }
   })
 });
 
-// Define the ProjectType object
+// Define the ProjectType object (already defined)
 const ProjectType = new GraphQLObjectType({
   name: 'Project',
   fields: () => ({
@@ -62,14 +26,60 @@ const ProjectType = new GraphQLObjectType({
     description: { type: GraphQLString },
     tasks: {
       type: new GraphQLList(TaskType),
-      resolve(parent) {
-        return _.filter(tasks, { projectId: parent.id });
+      resolve(parent, args) {
+        return Task.find({ projectId: parent.id });
       }
     }
   })
 });
 
-// Define the RootQuery
+// Define the Mutation object
+const Mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: {
+    // Add Project Mutation
+    addProject: {
+      type: ProjectType,
+      args: {
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        weight: { type: new GraphQLNonNull(GraphQLInt) },
+        description: { type: new GraphQLNonNull(GraphQLString) }
+      },
+      resolve(parent, args) {
+        const project = new Project({
+          title: args.title,
+          weight: args.weight,
+          description: args.description
+        });
+
+        return project.save();  // Save the project to MongoDB and return it
+      }
+    },
+
+    // Add Task Mutation
+    addTask: {
+      type: TaskType,
+      args: {
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        weight: { type: new GraphQLNonNull(GraphQLInt) },
+        description: { type: new GraphQLNonNull(GraphQLString) },
+        projectId: { type: new GraphQLNonNull(GraphQLID) }
+      },
+      resolve(parent, args) {
+        const task = new Task({
+          title: args.title,
+          weight: args.weight,
+          description: args.description,
+          projectId: args.projectId  // Link the task to the given project ID
+        });
+
+        return task.save();  // Save the task to MongoDB and return it
+      }
+    }
+  }
+});
+
+// Root Query (already defined)
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
@@ -79,7 +89,7 @@ const RootQuery = new GraphQLObjectType({
         id: { type: GraphQLID }
       },
       resolve(parent, args) {
-        return _.find(tasks, { id: args.id });
+        return Task.findById(args.id);  // Find task by ID from MongoDB
       }
     },
     project: {
@@ -88,26 +98,15 @@ const RootQuery = new GraphQLObjectType({
         id: { type: GraphQLID }
       },
       resolve(parent, args) {
-        return _.find(projects, { id: args.id });
-      }
-    },
-    tasks: {
-      type: new GraphQLList(TaskType),  // Return a list of all tasks
-      resolve() {
-        return tasks;  // Return all tasks
-      }
-    },
-    projects: {
-      type: new GraphQLList(ProjectType),  // Return a list of all projects
-      resolve() {
-        return projects;  // Return all projects
+        return Project.findById(args.id);  // Find project by ID from MongoDB
       }
     }
   }
 });
 
-// Export the schema with RootQuery
+// Export the schema with RootQuery and Mutation
 module.exports = new GraphQLSchema({
-  query: RootQuery
+  query: RootQuery,
+  mutation: Mutation
 });
 
