@@ -1,0 +1,9 @@
+mutation {
+  addTask(title: "Learn Closures", weight: 1, description: "Understand how closures work in JavaScript.", projectId: "60b4a57c2e3c9f32a8b9b1c8") {
+    id
+    title
+    weight
+    description
+    projectId
+  }
+}
