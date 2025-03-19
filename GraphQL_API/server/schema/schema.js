@@ -4,7 +4,7 @@ const Project = require('./models/project');  // Import Project model
 const Task = require('./models/task');        // Import Task model
 const { GraphQLList } = require('graphql');
 
-// Define the TaskType object (already defined)
+// Define the TaskType object
 const TaskType = new GraphQLObjectType({
   name: 'Task',
   fields: () => ({
@@ -16,7 +16,7 @@ const TaskType = new GraphQLObjectType({
   })
 });
 
-// Define the ProjectType object (already defined)
+// Define the ProjectType object
 const ProjectType = new GraphQLObjectType({
   name: 'Project',
   fields: () => ({
@@ -27,10 +27,54 @@ const ProjectType = new GraphQLObjectType({
     tasks: {
       type: new GraphQLList(TaskType),
       resolve(parent, args) {
-        return Task.find({ projectId: parent.id });
+        // Get all tasks related to this project from the database
+        return Task.find({ projectId: parent.id });  // Fetch tasks linked to the projectId
       }
     }
   })
+});
+
+// Define the RootQuery
+const RootQuery = new GraphQLObjectType({
+  name: 'RootQueryType',
+  fields: {
+    task: {
+      type: TaskType,
+      args: {
+        id: { type: GraphQLID }
+      },
+      resolve(parent, args) {
+        // Find a task by ID from MongoDB
+        return Task.findById(args.id);  // Query the Task collection by ID
+      }
+    },
+    project: {
+      type: ProjectType,
+      args: {
+        id: { type: GraphQLID }
+      },
+      resolve(parent, args) {
+        // Find a project by ID from MongoDB
+        return Project.findById(args.id);  // Query the Project collection by ID
+      }
+    },
+    // Fetch all tasks
+    tasks: {
+      type: new GraphQLList(TaskType),
+      resolve(parent, args) {
+        // Fetch all tasks from the MongoDB database
+        return Task.find();  // Retrieve all tasks
+      }
+    },
+    // Fetch all projects
+    projects: {
+      type: new GraphQLList(ProjectType),
+      resolve(parent, args) {
+        // Fetch all projects from the MongoDB database
+        return Project.find();  // Retrieve all projects
+      }
+    }
+  }
 });
 
 // Define the Mutation object
@@ -52,7 +96,7 @@ const Mutation = new GraphQLObjectType({
           description: args.description
         });
 
-        return project.save();  // Save the project to MongoDB and return it
+        return project.save();  // Save the new project to the database
       }
     },
 
@@ -70,35 +114,10 @@ const Mutation = new GraphQLObjectType({
           title: args.title,
           weight: args.weight,
           description: args.description,
-          projectId: args.projectId  // Link the task to the given project ID
+          projectId: args.projectId  // Link task to a specific project
         });
 
-        return task.save();  // Save the task to MongoDB and return it
-      }
-    }
-  }
-});
-
-// Root Query (already defined)
-const RootQuery = new GraphQLObjectType({
-  name: 'RootQueryType',
-  fields: {
-    task: {
-      type: TaskType,
-      args: {
-        id: { type: GraphQLID }
-      },
-      resolve(parent, args) {
-        return Task.findById(args.id);  // Find task by ID from MongoDB
-      }
-    },
-    project: {
-      type: ProjectType,
-      args: {
-        id: { type: GraphQLID }
-      },
-      resolve(parent, args) {
-        return Project.findById(args.id);  // Find project by ID from MongoDB
+        return task.save();  // Save the new task to the database
       }
     }
   }
